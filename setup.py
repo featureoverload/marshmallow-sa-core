@@ -22,9 +22,15 @@ def parse_requirements_file(filename):
 # base requirements
 install_requires = parse_requirements_file('requirements.txt')
 test_requires = parse_requirements_file('test-requirements.txt')
+docs_requires = [
+    "sphinx",
+    "sphinx_rtd_theme >= 1.0.0",
+    "recommonmark >= 0.7.1"
+]
 
 extras = {
     "test": test_requires,
+    "docs": docs_requires,
 }
 
 extras["all"] = sum(extras.values(), [])
