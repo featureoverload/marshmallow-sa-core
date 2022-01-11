@@ -8,7 +8,7 @@ from marshmallow import pre_dump
 from marshmallow import validate
 from marshmallow.validate import Length
 from sqlalchemy import Column
-from sqlalchemy import CheckConstraint as Check
+from sqlalchemy import CheckConstraint
 from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy import UniqueConstraint
 
@@ -17,6 +17,14 @@ from marshmallow_sa_core.utilities.schema import ObjectSchema
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.type_api import TypeEngine
+
+
+class CheckConstraintSchema(ObjectSchema):
+    class Meta:
+        object_class = CheckConstraint
+
+    sqltext = fields.String(required=True)
+    name = fields.String()
 
 
 class ColumnSchema(Schema):
@@ -32,7 +40,7 @@ class ColumnSchema(Schema):
                             required=False,
                             metadata={'title': 'description',
                                       'description': "A description for the field"})
-    checks = fields.List(fields.Raw())
+    checks = fields.List(fields.Nested(CheckConstraintSchema))
     nullable = fields.Boolean()
     primary_key = fields.Boolean()
     unique = fields.Boolean()

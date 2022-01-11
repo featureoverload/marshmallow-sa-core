@@ -6,6 +6,8 @@ ref: https://specs.frictionlessdata.io/table-schema/#types-and-formats
 - dump SQLAlchemy Table to jsonable table data.
 """
 
+from typing import Any
+from typing import Dict
 from marshmallow import Schema
 from marshmallow import fields as ma_fields
 from marshmallow import post_load
@@ -13,7 +15,6 @@ from marshmallow import pre_dump
 from marshmallow.validate import Length
 from marshmallow_enum import EnumField
 
-from sqlalchemy import CheckConstraint as Check
 from sqlalchemy import Column
 from sqlalchemy import MetaData
 from sqlalchemy import Table
@@ -41,7 +42,7 @@ class ConstraintsSchema(Schema):
         kwargs = {
             'nullable': not constraints.pop('required', False),
             'unique': constraints.pop('unique', False),
-            'args': constraints
+            'checks': constraints,
         }
         return kwargs
 
@@ -70,39 +71,34 @@ class JSONFieldSchema(ObjectSchema):
                               metadata={'description': "Indicating a format for this field type"})
     constraints = ma_fields.Nested(ConstraintsSchema)
 
-    def _checks_in_constraints(self, constraints, field_name):
-        checks = []
-        for name, value in constraints.items():
-            if name == 'minLength':
-                checks.append(Check('LENGTH("%s") >= %s' % (field_name, value)))
-            elif name == 'maxLength':
-                checks.append(Check('LENGTH("%s") <= %s' % (field_name, value)))
-            elif name == 'minimum':
-                checks.append(Check('"%s" >= %s' % (field_name, value)))
-            elif name == 'maximum':
-                checks.append(Check('"%s" <= %s' % (field_name, value)))
-            elif name == 'pattern':
-                raise NotImplementedError('not support yet')
-                if self.__dialect in ['postgresql']:
-                    checks.append(Check('"%s" ~ \'%s\'' % (field_name, value)))
-                else:
-                    checks.append(Check('"%s" REGEXP \'%s\'' % (field_name, value)))
-            elif name == 'enum':
-                raise NotImplementedError('not support yet')
-                column_type = sa.Enum(*value, name='%s_%s_enum' % (table_name, field.name))
-            else:
-                raise ValueError(f'unknown "{name}"')
-        return checks
-
     @post_load
     def create_object(self, data, **_) -> Column:
-        if 'constraints' in data:
-            kwargs = data.pop('constraints')
-            kwargs['checks'] = self._checks_in_constraints(kwargs.pop('args'), data['name'])
-            data.update(kwargs)
+        self.constraints_as_sa_column_kwargs(data)
         if 'description' in data:
             data['comment'] = data.pop('description')
         return SAColumnSchema().load(data)
+
+    def constraints_as_sa_column_kwargs(self, data: dict) -> None:
+        if 'constraints' not in data:
+            return
+
+        kwargs = data.pop('constraints')
+        kwargs['checks'] = self.checks_to_sa_check_constraints(kwargs.pop('checks'), data['name'])
+        data.update(kwargs)
+
+    def checks_to_sa_check_constraints(self, checks: Dict[str, Any], column_name: str):
+        sqltexts = {
+            'minLength': 'LENGTH("%s") >= %s',
+            'maxLength': 'LENGTH("%s") <= %s',
+            'minimum': '"%s" >= %s',
+            'maximum': '"%s" <= %s',
+        }
+
+        sa_check_data: List[Dict[str, str]] = []
+        for constraint, value in checks.items():
+            sqltext = sqltexts[constraint] % (column_name, value)
+            sa_check_data.append({'sqltext': sqltext})
+        return sa_check_data
 
     @pre_dump
     def jsonable_encoder(self, column: Column, **_) -> dict:
