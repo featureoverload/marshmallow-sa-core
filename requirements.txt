@@ -1,0 +1,2 @@
+marshmallow >= 3.13.0
+SQLAlchemy >= 1.4.0.*
