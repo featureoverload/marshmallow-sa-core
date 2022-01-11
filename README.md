@@ -1,5 +1,9 @@
 # marshmallow-sa-core
 
+[![Build Status](https://github.com/featureoverload/marshmallow-sa-core/actions/workflows/python-package.yml/badge.svg)](https://github.com/featureoverload/marshmallow-sa-core/actions?query=workflow%3Apython-package)
+[![PyPi](https://img.shields.io/pypi/v/marshmallow-sa-core.svg)](https://pypi.org/project/marshmallow-sa-core)
+[![License](https://img.shields.io/github/license/featureoverload/marshmallow-sa-core.svg)](LICENSE)
+
 SQLAlchemy-core integration with marshmallow (de)serialization library.
 
 
