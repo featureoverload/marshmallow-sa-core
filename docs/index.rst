@@ -10,6 +10,8 @@ Welcome to Marshmallow SQLAlchemy Core's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   installation
+   history
 
 
 Indices and tables
